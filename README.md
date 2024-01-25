@@ -1,2 +1,2 @@
 # No-soy-programador
-Amigos si van a usar algun script de los que se suben aqui, tienen que saber no soy programador, solo he utilizado herramientas y leyendo la documentacion de las AP para poder crear los scripts.
+Amigos si van a usar algun script de los que se suben aqui, tienen que saber no soy programador, solo he utilizado herramientas y leyendo la documentacion de las AP para poder crear los scripts, hasta el momento el me ha funcionado muy bien, pero si lo vas a usar te recomiendo que no dejes todo tu capital en esa billetera, dejale solo el capital que va a usar el bot y transfiere el dinero a otra billetera o a una subcuenta. El bot solo funciona en bybit.
