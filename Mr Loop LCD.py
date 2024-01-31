@@ -15,7 +15,7 @@ session = HTTP(
 simbolo = input('INGRESE EL TICK A OPERAR: ') + "USDT"
 qty = float(input('INGRESE LA CANTIDAD DE MONEDAS QUE VA A COMPRAR: '))
 LCD_threshold= float(input('INGRESE LA CANTIDAD DE MONEDAS QUE NO VA A DESCARGAR: '))
-cant_recompras = 8
+cant_recompras = 6 # Modifique la cantidad de recompras que desea
 qty = qty  
 LCD_threshold=LCD_threshold
 qty_str = -LCD_threshold
@@ -59,6 +59,7 @@ def primer_bucle():
 
                     # Tamaño para las órdenes límite
                     size = float(positions_list[0]['size'])
+                    size_nuevo=size
 
                     # calcular el precio del SL
                     distancia_sl=(cant_recompras * 0.02) + 0.01
@@ -67,7 +68,7 @@ def primer_bucle():
                     # Factor multiplicador para la cantidad de moneda en cada orden
                     factor_multiplicador_cantidad = 0.40 
                     factor_multiplicador_distancia = 2.0
-                    size_nuevo = size
+                    
                 
                     # Verificar si no hay órdenes limit abiertas
                     limit_orders = (session.get_open_orders(category="linear", symbol=simbolo, openOnly=0, limit=10,)) 
@@ -96,8 +97,9 @@ def primer_bucle():
                                 cantidad_orden = int(cantidad_orden)  # Redondea hacia abajo si es un número entero
                             else:
                                 cantidad_orden = round(cantidad_orden, len(str(size_nuevo).split('.')[1]))
+                            
 
-                            size_nuevo = cantidad_orden
+                            size_nuevo = cantidad_orden # Actualiza size para la siguiente iteración
 
                             # Calcula el precio para la orden límite
                             precio_orden_limite = current_price - (current_price * porcentaje_distancia)
@@ -112,13 +114,14 @@ def primer_bucle():
                                 price=str(precio_orden_limite),
                             )
 
+                            
                     
                             # Imprime la respuesta de la orden límite
                             print(f"Orden Límite {i}: {response_limit_order}")
 
                     else:
                         print("Verificando recompras")
-                        time.sleep(120)
+                        time.sleep(300)
                 else:
                     print("No hay posiciones en la lista. Esperando...")
                     time.sleep(5)
@@ -146,8 +149,8 @@ def segundo_bucle():
                     precio_entrada_actual = float(positions_response['result']['list'][0]['avgPrice'])
                     tamaño_for_takeprofit = float(positions_response['result']['list'][0]['size'])
                     take_profit_qty = tamaño_for_takeprofit - LCD_threshold
-                    decimales= len(str(tamaño_for_takeprofit).split('.')[1]) if '.' in str(tamaño_for_takeprofit) else 0
-                    take_profit_qty=round(take_profit_qty, decimales)
+                    take_profit_qty=round(take_profit_qty, len(str(tamaño_for_takeprofit).split('.')[1]))
+                            
 
                     if precio_entrada_actual != precio_entrada_original:
                         # Cancelar la orden de take profit existente si hay un cambio en el precio de entrada
@@ -171,7 +174,7 @@ def segundo_bucle():
                             side="Sell",
                             orderType="Limit",
                             qty=str(take_profit_qty),
-                            price=str(precio_orden_takeprofit),  # Convertir a cadena antes de enviar
+                            price=str(precio_orden_takeprofit), 
                         )
 
                         # Verificar si la nueva orden de take profit se realizó con éxito y obtener el nuevo order ID
@@ -185,7 +188,7 @@ def segundo_bucle():
                         print("La posicion aun no se ha cargado para poner take profit")
 
                     # Esperar antes de la próxima iteración (ajusta según tus necesidades)
-                    time.sleep(120)
+                    time.sleep(300)
 
                 except Exception as e:
                     print(f"Se produjo un error durante la verificación: {e}")
@@ -225,12 +228,11 @@ def tercer_bucle():
 
             # Verificar si hay menos de 6 órdenes límite de compra y el tamaño de la posición es igual o menor que el umbral
             if tamaño_for_cancel <= LCD_threshold and len(buy_limit_orders) < cant_recompras:
-
+                
                 # Cancelar todas las órdenes abiertas
                 for order in buy_limit_orders: 
                     # Cancelar SL
-                    session.cancel_all_orders(category="linear", symbol=simbolo, orderFilter="StopOrder" )
-                    print("Cancelando stop loss y preparandose para iniciar nuevo bucle")                   
+                    session.cancel_all_orders(category="linear", symbol=simbolo, orderFilter="StopOrder" )              
                     order_id = order['orderId']
                     cancel_response = session.cancel_order(category="linear", symbol=simbolo, orderId=order_id)
 
@@ -241,7 +243,7 @@ def tercer_bucle():
             else:
                 print("No es necesario cancelar las recompras aún, esperando...")
 
-            time.sleep(130)
+            time.sleep(290)
 
         except Exception as e:
             print(f"Error en el tercer bucle: {e}")
