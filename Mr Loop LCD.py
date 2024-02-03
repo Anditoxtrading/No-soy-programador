@@ -1,7 +1,7 @@
 from pybit.unified_trading import HTTP
 import time
-import threading
 import config
+import threading
 
 
 session = HTTP(
@@ -10,27 +10,41 @@ session = HTTP(
     api_secret=config.api_secret,
 )
 
-
 # Parámetros para LCD
 simbolo = input('INGRESE EL TICK A OPERAR: ') + "USDT"
 qty = float(input('INGRESE LA CANTIDAD DE MONEDAS QUE VA A COMPRAR: '))
-LCD_threshold= float(input('INGRESE LA CANTIDAD DE MONEDAS QUE NO VA A DESCARGAR: '))
-cant_recompras = 6 # Modifique la cantidad de recompras que desea
-qty = qty  
-LCD_threshold=LCD_threshold
+LCD_threshold = float(input('INGRESE LA CANTIDAD DE MONEDAS QUE NO VA A DESCARGAR: '))
+cant_recompras = 6  # Modifique la cantidad de recompras que desea
 qty_str = -LCD_threshold
 
-# Inicializar el tamaño de la posición anterior
-previous_position_size = 0
+try:
+    # Obtener la lista actualizada de posiciones
+    response_positions = session.get_positions(
+        category="linear",
+        symbol=simbolo,
+    )
 
-# Coloca la orden de mercado
-response_market_order = session.place_order(
-    category="linear",
-    symbol=simbolo,
-    side="Buy" ,
-    orderType="Market",
-    qty=qty,
-)
+    # Verificar si la solicitud fue exitosa (retCode 0 significa éxito)
+    if response_positions['retCode'] == 0:
+        # Acceder a la información de la posición
+        positions_list = response_positions['result']['list']
+
+        # Verificar si hay posiciones en la lista y si alguna está abierta
+        if positions_list and any(position['size'] != '0' for position in positions_list):
+            print("Ya hay una posición abierta. No se abrirá otra posición.")
+        else:
+            # Coloca la orden de mercado si no hay posiciones abiertas
+            response_market_order = session.place_order(
+                category="linear",
+                symbol=simbolo,
+                side="Buy",
+                orderType="Market",
+                qty=qty,
+            )
+    else:
+        print("Error al obtener las posiciones.")
+except Exception as e:
+    print(f"Error: {e}")
 
 # Espera 5 segundos (o el tiempo necesario para que la orden de mercado se complete)
 time.sleep(5)
@@ -133,8 +147,8 @@ def primer_bucle():
 def segundo_bucle():
     while True:
         try:
-            # Configuración inicial
-            distancia_LCD = 0.01
+            # Configuración de la distancia del Take Profit
+            distancia_LCD = 0.005
             take_profit_order_id = None
 
 
