@@ -71,10 +71,15 @@ def primer_bucle():
                     # Obtener el precio actual de la posición
                     current_price = float(positions_list[0]['avgPrice'])
 
+                    
                     # Tamaño para las órdenes límite
                     size = float(positions_list[0]['size'])
-                    size_nuevo=size
 
+                    # Redondear hacia abajo si es necesario
+                    size = int(size) if size.is_integer() else size
+
+                    size_nuevo=size
+                    
                     # calcular el precio del SL
                     distancia_sl=(cant_recompras * 0.02) + 0.01
                     price_sl = current_price - (current_price * distancia_sl)
@@ -209,7 +214,7 @@ def segundo_bucle():
                     # Manejar el error según sea necesario
 
                 # Esperar antes de la próxima iteración del bucle interno
-                time.sleep(10)
+                time.sleep(5)
 
         except Exception as e:
             print(f"Se produjo un error al obtener información inicial: {e}")
@@ -257,7 +262,7 @@ def tercer_bucle():
             else:
                 print("No es necesario cancelar las recompras aún, esperando...")
 
-            time.sleep(290)
+            time.sleep(300)
 
         except Exception as e:
             print(f"Error en el tercer bucle: {e}")
