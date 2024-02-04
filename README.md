@@ -10,7 +10,7 @@ Antes de utilizar el script, asegúrate de tener instalado Python en tu sistema.
 
 1. Descarga y modifica el archivo `config.py` utilizando un editor de texto como Sublime Text o el Bloc de notas.
 
-2. Agrega tu API KEY y API SECRET proporcionadas por Bybit. Puedes obtenerlas [aquí](https://www.bybit.com/es-LA).
+2. Agrega tu API KEY y API SECRET proporcionadas por Bybit. 
 
 ```python
 api_key = 'TU_API_KEY'
