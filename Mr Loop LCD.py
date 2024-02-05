@@ -262,7 +262,7 @@ def tercer_bucle():
             else:
                 print("No es necesario cancelar las recompras aún, esperando...")
 
-            time.sleep(300)
+            time.sleep(310)
 
         except Exception as e:
             print(f"Error en el tercer bucle: {e}")
