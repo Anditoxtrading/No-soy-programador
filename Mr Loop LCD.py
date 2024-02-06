@@ -104,7 +104,7 @@ def primer_bucle():
                         print("Colocando Stop Loss")
 
                         # PONER ORDEN STOP LOSS
-                        session.set_trading_stop(category="linear", symbol=simbolo, stopLoss=str(price_sl), slTriggerB="IndexPrice",tpslMode="Full", slOrderType="Market",)
+                        session.set_trading_stop(category="linear", symbol=simbolo, stopLoss=price_sl, slTriggerB="IndexPrice",tpslMode="Full", slOrderType="Market",)
                         
                         # Abre órdenes límite con porcentajes de distancia y cantidad progresivos
                         for i in range(1, cant_recompras + 1):
