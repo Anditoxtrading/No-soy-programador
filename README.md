@@ -28,6 +28,7 @@ Es importante tener en cuenta que el modo de Cobertura debe estar desactivado pa
 ## Notas importantes
 
 - Este script está diseñado específicamente para la plataforma Bybit.
+- Es posible que si no tienes tu cuenta unificada en bybit, debido a algunas funciones de la API, el bot presente algun error.
 - Si decides utilizar este script, ten en cuenta que no soy un programador profesional. He desarrollado este bot basándome en herramientas disponibles y la documentación de las API de Bybit.
 - Se recomienda no dejar todo tu capital en la billetera asociada al bot. Transfiere únicamente los fondos necesarios para operar y considera mover el resto a otra billetera o subcuenta.
   
