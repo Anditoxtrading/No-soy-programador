@@ -89,7 +89,7 @@ def primer_bucle():
                     size_nuevo=size
                     
                     # calcular el precio del SL
-                    distancia_sl = (cant_recompras * factor_multiplicador_distancia / 100) + 0.005
+                    distancia_sl = (cant_recompras * factor_multiplicador_distancia / 100) + 0.006
                     price_sl = current_price - (current_price * distancia_sl)
                 
                     # Verificar si no hay órdenes limit abiertas
@@ -158,7 +158,7 @@ def segundo_bucle():
     while True:
         try:
             # Configuración de la distancia del Take Profit
-            distancia_LCD = 0.005
+            distancia_LCD = 0.01
             take_profit_order_id = None
 
 
@@ -212,7 +212,7 @@ def segundo_bucle():
                         print("La posicion aun no se ha cargado para poner take profit")
 
                     # Esperar antes de la próxima iteración (ajusta según tus necesidades)
-                    time.sleep(300)
+                    time.sleep(305)
 
                 except Exception as e:
                     print(f"Se produjo un error durante la verificación: {e}")
@@ -269,7 +269,7 @@ def tercer_bucle():
             else:
                 print("No es necesario cancelar las recompras aún, esperando...")
 
-            time.sleep(310)
+            time.sleep(315)
 
         except Exception as e:
             print(f"Error en el tercer bucle: {e}")
