@@ -14,8 +14,16 @@ session = HTTP(
 simbolo = input('INGRESE EL TICK A OPERAR: ') + "USDT"
 qty = float(input('INGRESE LA CANTIDAD DE MONEDAS QUE VA A COMPRAR: '))
 LCD_threshold = float(input('INGRESE LA CANTIDAD DE MONEDAS QUE NO VA A DESCARGAR: '))
-cant_recompras = 6  # Modifique la cantidad de recompras que desea
+factor_multiplicador_distancia = float(input('INGRESE EL %PORCENTAJE DE DISTANCIA PARA LAS RECOMPRAS: '))
+cant_recompras = int(input('INGRESE LA CANTIDAD DE RECOMPRAS: '))
+
+
+
+
+# Factor multiplicador para las recompras
+factor_multiplicador_cantidad = 0.40 
 qty_str = -LCD_threshold
+
 
 try:
     # Obtener la lista actualizada de posiciones
@@ -81,13 +89,8 @@ def primer_bucle():
                     size_nuevo=size
                     
                     # calcular el precio del SL
-                    distancia_sl=(cant_recompras * 0.02) + 0.01
+                    distancia_sl = (cant_recompras * factor_multiplicador_distancia / 100) + 0.005
                     price_sl = current_price - (current_price * distancia_sl)
-                    
-                    # Factor multiplicador para la cantidad de moneda en cada orden
-                    factor_multiplicador_cantidad = 0.40 
-                    factor_multiplicador_distancia = 2.0
-                    
                 
                     # Verificar si no hay órdenes limit abiertas
                     limit_orders = (session.get_open_orders(category="linear", symbol=simbolo, openOnly=0, limit=10,)) 
@@ -148,6 +151,8 @@ def primer_bucle():
         except Exception as e:
             print(f"Error en el segundo bucle: {e}")
             time.sleep(5)
+# Espera 5 segundos
+time.sleep(5)
 
 def segundo_bucle():
     while True:
@@ -222,6 +227,8 @@ def segundo_bucle():
 
         # Esperar antes de la próxima iteración del bucle externo
         time.sleep(15)
+# Espera 5 segundos
+time.sleep(5)
 
 def tercer_bucle():
     while True:
@@ -282,4 +289,3 @@ hilo_tercer_bucle.start()
 hilo_primer_bucle.join()
 hilo_segundo_bucle.join()
 hilo_tercer_bucle.join()
-
