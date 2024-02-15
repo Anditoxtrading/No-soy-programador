@@ -41,7 +41,7 @@ try:
 
         # Verificar si hay posiciones en la lista y si alguna está abierta
         if positions_list and any(position['size'] != '0' for position in positions_list):
-            print("Ya hay una posición abierta. No se abrirá otra posición.")
+            print(f"Ya hay una posición abierta en: {simbolo}. No se abrirá otra posición.")
         else:
             # Coloca la orden de mercado si no hay posiciones abiertas
             response_market_order = session.place_order(
@@ -51,6 +51,7 @@ try:
                 orderType="Market",
                 qty=qty,
             )
+            print(f"Abriendo posición para {simbolo} : {response_market_order}")
     else:
         print("Error al obtener las posiciones.")
 except Exception as e:
@@ -105,11 +106,11 @@ def main():
 
                         # Verificar si la cantidad de monedas es igual o menor que el umbral LCD_threshold y no hay órdenes limit abiertas
                         if float(positions_list[0]['size']) <= LCD_threshold and len(ordenes_abiertas) == 0:                     
-                            print("Colocando recompras")
-                            print("Colocando Stop Loss")
-
+                            print("PREPARANDOSE PARA COLOCAR LAS RECOMPRAS Y EL STOP LOSS")
+                            
                             # PONER ORDEN STOP LOSS
-                            session.set_trading_stop(category="linear", symbol=simbolo, stopLoss=price_sl, slTriggerB="IndexPrice",tpslMode="Full", slOrderType="Market",)
+                            orden_SL=session.set_trading_stop(category="linear", symbol=simbolo, stopLoss=price_sl, slTriggerB="IndexPrice",tpslMode="Full", slOrderType="Market",)
+                            print(f"Colocando Stop Loss en {simbolo} : {orden_SL}")
                             
                             # Abre órdenes límite con porcentajes de distancia y cantidad progresivos
                             for i in range(1, cant_recompras + 1):
@@ -137,25 +138,21 @@ def main():
                                     qty=str(cantidad_orden),
                                     price=str(precio_orden_limite),
                                 )
-
-                                
-                        
+                       
                                 # Imprime la respuesta de la orden límite
-                                print(f"Orden Límite {i}: {response_limit_order}")
+                                print(f"Colocando orden Límite {i} en {simbolo}: {response_limit_order}")
 
                         else:
-                            print("Verificando recompras")
+                            print(f"Verificando recompras en {simbolo}")
                             time.sleep(300)
                     else:
-                        print("No hay posiciones en la lista. Esperando...")
+                        print(f"No hay posiciones en la lista en {simbolo} Esperando...")
                         time.sleep(5)
 
             except Exception as e:
-                print(f"Error en el segundo bucle: {e}")
+                print(f"Error en el primer bucle en {simbolo}: {e}")
                 time.sleep(5)
-    # Espera 5 segundos
-    time.sleep(5)
-
+ 
     def segundo_bucle():
         while True:
             try:
@@ -183,9 +180,9 @@ def main():
                             if take_profit_order_id is not None:
                                 cancel_response = session.cancel_order(category="linear", symbol=simbolo, orderId=take_profit_order_id)
                                 if 'result' in cancel_response and cancel_response['result']:   
-                                    print(f"Orden de take profit existente cancelada con éxito. Order ID: {take_profit_order_id}")
+                                    print(f"Orden de take profit en {simbolo} existente cancelada con éxito. Order ID: {take_profit_order_id}")
                                 else:
-                                    print(f"Error al cancelar la orden de take profit existente: {cancel_response}")
+                                    print(f"Error al cancelar la orden de take profit existente en {simbolo}: {cancel_response}")
 
                             # Actualizar el precio de entrada original con el precio de entrada actual
                             precio_entrada_original = precio_entrada_actual
@@ -206,12 +203,12 @@ def main():
                             # Verificar si la nueva orden de take profit se realizó con éxito y obtener el nuevo order ID
                             if 'result' in take_profit_order_response and 'orderId' in take_profit_order_response['result']:
                                 take_profit_order_id = take_profit_order_response['result']['orderId']
-                                print(f"Posicion cargada, colocando take profit Orden: {take_profit_order_id}")
+                                print(f"Posicion cargada en {simbolo}, colocando take profit Orden: {take_profit_order_id}")
                             else:
-                                print(f"Error al realizar la nueva orden de take profit: {take_profit_order_response}")
+                                print(f"Error al realizar la nueva orden de take profit en {simbolo}: {take_profit_order_response}")
 
                         else:
-                            print("La posicion aun no se ha cargado para poner take profit")
+                            print(f"La posicion en {simbolo} aun no se ha cargado para poner take profit")
 
                         # Esperar antes de la próxima iteración (ajusta según tus necesidades)
                         time.sleep(305)
@@ -225,12 +222,10 @@ def main():
 
             except Exception as e:
                 print(f"Se produjo un error al obtener información inicial: {e}")
-                # Manejar el error según sea necesario
+                
 
             # Esperar antes de la próxima iteración del bucle externo
             time.sleep(15)
-    # Espera 5 segundos
-    time.sleep(5)
 
     def tercer_bucle():
         while True:
@@ -238,7 +233,7 @@ def main():
                 # Obtener información sobre las posiciones abiertas
                 response_for_cancel = session.get_positions(category="linear", symbol=simbolo)
                 tamaño_for_cancel = float(response_for_cancel['result']['list'][0]['size'])
-                print(tamaño_for_cancel)
+                
 
                 # Obtener órdenes límite abiertas
                 open_orders_response = session.get_open_orders(
@@ -256,27 +251,28 @@ def main():
 
                 # Verificar si hay menos de 6 órdenes límite de compra y el tamaño de la posición es igual o menor que el umbral
                 if tamaño_for_cancel <= LCD_threshold and len(buy_limit_orders) < cant_recompras:
+                    # Cancelar SL
+                    cancel_sl =session.cancel_all_orders(category="linear", symbol=simbolo, orderFilter="StopOrder" ) 
+                    print(f"Orden Stop Loss cancelada con exito en {simbolo}: {cancel_sl}")
                     
                     # Cancelar todas las órdenes abiertas
-                    for order in buy_limit_orders: 
-                        # Cancelar SL
-                        session.cancel_all_orders(category="linear", symbol=simbolo, orderFilter="StopOrder" )              
+                    for order in buy_limit_orders:                                    
                         order_id = order['orderId']
                         cancel_response = session.cancel_order(category="linear", symbol=simbolo, orderId=order_id)
 
                         if 'result' in cancel_response and cancel_response['result']:
-                            print(f"Orden de compra cancelada con éxito. Order ID: {order_id}")
+                            print(f"Orden de compra cancelada con éxito en {simbolo}. Order ID: {order_id}")
                         else:
-                            print(f"Error al cancelar la orden de compra. Order ID: {order_id}")
+                            print(f"Error al cancelar la orden de compra en {simbolo}. Order ID: {order_id}")
                 else:
-                    print("No es necesario cancelar las recompras aún, esperando...")
+                    print(f"{simbolo}:No es necesario cancelar las recompras aún, esperando...")
 
-                time.sleep(315)
+                time.sleep(320)
 
             except Exception as e:
-                print(f"Error en el tercer bucle: {e}")
+                print(f"Error en el tercer bucle {simbolo}: {e}")
                 time.sleep(5)
-                
+
     # Crear hilos para cada bucle
     hilo_primer_bucle = threading.Thread(target=primer_bucle)
     hilo_segundo_bucle = threading.Thread(target=segundo_bucle)
@@ -284,10 +280,11 @@ def main():
 
     # Iniciar los hilos
     hilo_primer_bucle.start()
+    time.sleep(10) # Esperar 10 segundos antes de iniciar los próximos bucles
     hilo_segundo_bucle.start()
     hilo_tercer_bucle.start()
 
-    # Esperar a que los hilos terminen (esto no sucederá ya que los bucles se ejecutan indefinidamente)
+    # Esperar a que los hilos terminen 
     hilo_primer_bucle.join()
     hilo_segundo_bucle.join()
     hilo_tercer_bucle.join()
@@ -298,7 +295,7 @@ if __name__ == "__main__":
             main()
         except Exception as e:
             print(f"Se produjo un error: {e}")
-            print("Reiniciando los bucles en 60 segundos...")
+            print("Reiniciando los bucles en 30 segundos...")
             time.sleep(30)  # Esperar 30 segundos antes de reiniciar los bucles
             continue
 
