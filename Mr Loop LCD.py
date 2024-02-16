@@ -4,8 +4,6 @@ import threading
 from pybit.unified_trading import HTTP
 import config
 
-
-
 session = HTTP(
     testnet=False,
     api_key=config.api_key,
@@ -20,9 +18,7 @@ factor_multiplicador_distancia = float(input('INGRESE EL %PORCENTAJE DE DISTANCI
 cant_recompras = int(input('INGRESE LA CANTIDAD DE RECOMPRAS: '))
 
 
-
-
-# Factor multiplicador para las recompras
+# Factor multiplicador para las recompras (Primer bucle)
 factor_multiplicador_cantidad = 0.40 
 qty_str = -LCD_threshold
 
@@ -41,7 +37,7 @@ try:
 
         # Verificar si hay posiciones en la lista y si alguna está abierta
         if positions_list and any(position['size'] != '0' for position in positions_list):
-            print(f"Ya hay una posición abierta en: {simbolo}. No se abrirá otra posición.")
+            print("Ya hay una posición abierta. No se abrirá otra posición.")
         else:
             # Coloca la orden de mercado si no hay posiciones abiertas
             response_market_order = session.place_order(
@@ -51,7 +47,6 @@ try:
                 orderType="Market",
                 qty=qty,
             )
-            print(f"Abriendo posición para {simbolo} : {response_market_order}")
     else:
         print("Error al obtener las posiciones.")
 except Exception as e:
@@ -61,7 +56,7 @@ except Exception as e:
 time.sleep(5)
 
 def main():
-                  
+            
     def primer_bucle():
         while True:
             try:
@@ -105,12 +100,15 @@ def main():
                         ]
 
                         # Verificar si la cantidad de monedas es igual o menor que el umbral LCD_threshold y no hay órdenes limit abiertas
-                        if float(positions_list[0]['size']) <= LCD_threshold and len(ordenes_abiertas) == 0:                     
-                            print("PREPARANDOSE PARA COLOCAR LAS RECOMPRAS Y EL STOP LOSS")
-                            
+                        if float(positions_list[0]['size']) <= LCD_threshold and len(ordenes_abiertas) == 0:                       
+                            mensaje_recompras = (f"Iniciando bucle LCD... Preparándose para colocar 🟢Recompras y 🔴Stop loss en {simbolo}... ⌛")
+                            print(mensaje_recompras)
+
+
                             # PONER ORDEN STOP LOSS
-                            orden_SL=session.set_trading_stop(category="linear", symbol=simbolo, stopLoss=price_sl, slTriggerB="IndexPrice",tpslMode="Full", slOrderType="Market",)
-                            print(f"Colocando Stop Loss en {simbolo} : {orden_SL}")
+                            orden_stop=session.set_trading_stop(category="linear", symbol=simbolo, stopLoss=price_sl, slTriggerB="IndexPrice",tpslMode="Full", slOrderType="Market",)
+                            mensaje_sl=(f"Orden Stop Loss de {simbolo} colocada con exito: {orden_stop}")                             
+                            print(mensaje_sl)
                             
                             # Abre órdenes límite con porcentajes de distancia y cantidad progresivos
                             for i in range(1, cant_recompras + 1):
@@ -140,19 +138,21 @@ def main():
                                 )
                        
                                 # Imprime la respuesta de la orden límite
-                                print(f"Colocando orden Límite {i} en {simbolo}: {response_limit_order}")
+                                mensaje_recompras2=(f"Orden Límite {i} de {simbolo} colocada con exito:{response_limit_order}")
+                                print(mensaje_recompras2)
 
                         else:
-                            print(f"Verificando recompras en {simbolo}")
+                            print("Verificando recompras")
                             time.sleep(300)
                     else:
-                        print(f"No hay posiciones en la lista en {simbolo} Esperando...")
+                        print("No hay posiciones en la lista. Esperando...")
                         time.sleep(5)
 
             except Exception as e:
-                print(f"Error en el primer bucle en {simbolo}: {e}")
+                error_bucle1=(f"Error en el primer bucle: {e}")
+                print(error_bucle1)
                 time.sleep(5)
- 
+
     def segundo_bucle():
         while True:
             try: 
@@ -163,7 +163,6 @@ def main():
                 # Obtener información sobre las posiciones abiertas
                 positions_response = session.get_positions(category="linear", symbol=simbolo)
                 precio_entrada_original = float(positions_response['result']['list'][0]['avgPrice'])
-
                 while True:
                     try:
                         # Obtener información sobre las posiciones abiertas
@@ -172,8 +171,7 @@ def main():
                         tamaño_for_takeprofit = float(positions_response['result']['list'][0]['size'])
                         take_profit_qty = tamaño_for_takeprofit - LCD_threshold
                         take_profit_qty=round(take_profit_qty, len(str(tamaño_for_takeprofit).split('.')[1]))
-                                
-
+                             
                         if precio_entrada_actual != precio_entrada_original:
                             
                             # Obtener órdenes límite abiertas
@@ -183,18 +181,16 @@ def main():
                             sell_limit_orders = [order for order in open_orders_responsetp.get('result', {}).get('list', [])
                                                 if order.get('orderType') == "Limit" and order.get('side') == 'Sell']
 
-
                             # Iterar sobre las órdenes límite de venta para obtener y cancelar cada una
                             for order in sell_limit_orders:
                                 take_profit_order_id = order['orderId']
                                 cancel_response = session.cancel_order(category="linear", symbol=simbolo, orderId=take_profit_order_id)
                                 if 'result' in cancel_response and cancel_response['result']:   
                                     mensaje_canceltp=(f"Orden de take profit existente cancelada con éxito en {simbolo}: {cancel_response}")
-                                    print(mensaje_canceltp)
+                                    
                                 else:
-                                    error_canceltp=(f"Error al cancelar la orden de take profit existente en {simbolo}: {cancel_response}")
-                                    print(error_canceltp)
-
+                                    mensaje_canceltp=(f"Error al cancelar la orden de take profit existente en {simbolo}: {cancel_response}")
+                                print(mensaje_canceltp)
 
                             # Actualizar el precio de entrada original con el precio de entrada actual
                             precio_entrada_original = precio_entrada_actual
@@ -233,8 +229,6 @@ def main():
                         error_tp1=(f"Se produjo un error durante la verificación: {e}")
                         print(error_tp1)
                         
-                        # Manejar el error según sea necesario
-
                     # Esperar antes de la próxima iteración del bucle interno
                     time.sleep(120)
 
@@ -250,7 +244,7 @@ def main():
                 # Obtener información sobre las posiciones abiertas
                 response_for_cancel = session.get_positions(category="linear", symbol=simbolo)
                 tamaño_for_cancel = float(response_for_cancel['result']['list'][0]['size'])
-                
+                print(tamaño_for_cancel)
 
                 # Obtener órdenes límite abiertas
                 open_orders_response = session.get_open_orders(
@@ -267,29 +261,44 @@ def main():
                 ]
 
                 # Verificar si hay menos de 6 órdenes límite de compra y el tamaño de la posición es igual o menor que el umbral
-                if tamaño_for_cancel <= LCD_threshold and len(buy_limit_orders) < cant_recompras:
-                    # Cancelar SL
-                    cancel_sl =session.cancel_all_orders(category="linear", symbol=simbolo, orderFilter="StopOrder" ) 
-                    print(f"Orden Stop Loss cancelada con exito en {simbolo}: {cancel_sl}")
+                if tamaño_for_cancel <= LCD_threshold and len(buy_limit_orders) < cant_recompras:   
+
+                    # Cancelar Stop loss
+                    cancel_sl =session.cancel_all_orders(category="linear", symbol=simbolo, orderFilter="StopOrder" )
+                    mensaje_cancelsl=(f"Orden Stop Loss cancelada con exito en {simbolo}: {cancel_sl}")
+                    print(mensaje_cancelsl)
                     
                     # Cancelar todas las órdenes abiertas
-                    for order in buy_limit_orders:                                    
+                    for order in buy_limit_orders:         
                         order_id = order['orderId']
                         cancel_response = session.cancel_order(category="linear", symbol=simbolo, orderId=order_id)
 
                         if 'result' in cancel_response and cancel_response['result']:
-                            print(f"Orden de compra cancelada con éxito en {simbolo}. Order ID: {order_id}")
+                            mensaje_cancel=(f"Orden de compra cancelada con éxito en {simbolo}. Order ID: {order_id}")
                         else:
-                            print(f"Error al cancelar la orden de compra en {simbolo}. Order ID: {order_id}")
-                else:
-                    print(f"{simbolo}:No es necesario cancelar las recompras aún, esperando...")
+                            mensaje_cancel=(f"Error al cancelar la orden de compra en {simbolo}. Order ID: {order_id}")
+                        print(mensaje_cancel)
 
-                time.sleep(300)
+                    # Obtener la lista de órdenes cerradas para calcular la PNL generada
+                    closed_orders_response = session.get_closed_pnl(category="linear", symbol=simbolo, side="Sell", limit=1)
+                    closed_orders_list = closed_orders_response['result']['list']
+
+                    # Obtener la PNL generada
+                    for order in closed_orders_list:
+                        pnl_cerrada = float(order['closedPnl'])
+                        mensaje_pnl = (f"Posición 🚚 descargada en {simbolo}, 💰💰💰 PNL realizado 💰💰💰: {pnl_cerrada}. Esperando a comenzar nuevo bucle...")
+                        print(mensaje_pnl)
+                else:
+                    print("No es necesario cancelar las recompras aún, esperando...")
+
+                # interaccion del bucle
+                time.sleep(180)
 
             except Exception as e:
-                print(f"Error en el tercer bucle {simbolo}: {e}")
+                error_bucle3=(f"Error en el tercer bucle: {e}")
+                print(error_bucle3)
                 time.sleep(5)
-
+                
     # Crear hilos para cada bucle
     hilo_primer_bucle = threading.Thread(target=primer_bucle)
     hilo_segundo_bucle = threading.Thread(target=segundo_bucle)
@@ -301,9 +310,9 @@ def main():
     hilo_segundo_bucle.start()
     hilo_tercer_bucle.start()
 
-    # Esperar a que los hilos terminen 
+    # Esperar a que los hilos terminen (esto no sucederá ya que los bucles se ejecutan indefinidamente)
     hilo_primer_bucle.join()
-    time.sleep(10)
+    time.sleep(12)
     hilo_segundo_bucle.join()
     hilo_tercer_bucle.join()
 
@@ -312,8 +321,8 @@ if __name__ == "__main__":
         try:
             main()
         except Exception as e:
-            print(f"Se produjo un error: {e}")
-            print("Reiniciando los bucles en 30 segundos...")
+            error_message = f"Se produjo un error: {e}"
+            print(error_message)
+            print("Reiniciando los bucles en 60 segundos...")
             time.sleep(30)  # Esperar 30 segundos antes de reiniciar los bucles
             continue
-
