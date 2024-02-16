@@ -155,11 +155,10 @@ def main():
  
     def segundo_bucle():
         while True:
-            try:
-                # Configuración de la distancia del Take Profit
+            try: 
+                # Configuración del Take Profit (Segundo bucle)
                 distancia_LCD = 0.01
-                take_profit_order_id = None
-
+                
 
                 # Obtener información sobre las posiciones abiertas
                 positions_response = session.get_positions(category="linear", symbol=simbolo)
@@ -176,13 +175,26 @@ def main():
                                 
 
                         if precio_entrada_actual != precio_entrada_original:
-                            # Cancelar la orden de take profit existente si hay un cambio en el precio de entrada
-                            if take_profit_order_id is not None:
+                            
+                            # Obtener órdenes límite abiertas
+                            open_orders_responsetp = session.get_open_orders(category="linear", symbol=simbolo, openOnly=0, limit=1,)                  
+
+                            # Filtrar solo las órdenes límite de venta (Sell)
+                            sell_limit_orders = [order for order in open_orders_responsetp.get('result', {}).get('list', [])
+                                                if order.get('orderType') == "Limit" and order.get('side') == 'Sell']
+
+
+                            # Iterar sobre las órdenes límite de venta para obtener y cancelar cada una
+                            for order in sell_limit_orders:
+                                take_profit_order_id = order['orderId']
                                 cancel_response = session.cancel_order(category="linear", symbol=simbolo, orderId=take_profit_order_id)
                                 if 'result' in cancel_response and cancel_response['result']:   
-                                    print(f"Orden de take profit en {simbolo} existente cancelada con éxito. Order ID: {take_profit_order_id}")
+                                    mensaje_canceltp=(f"Orden de take profit existente cancelada con éxito en {simbolo}: {cancel_response}")
+                                    print(mensaje_canceltp)
                                 else:
-                                    print(f"Error al cancelar la orden de take profit existente en {simbolo}: {cancel_response}")
+                                    error_canceltp=(f"Error al cancelar la orden de take profit existente en {simbolo}: {cancel_response}")
+                                    print(error_canceltp)
+
 
                             # Actualizar el precio de entrada original con el precio de entrada actual
                             precio_entrada_original = precio_entrada_actual
@@ -197,35 +209,40 @@ def main():
                                 side="Sell",
                                 orderType="Limit",
                                 qty=str(take_profit_qty),
-                                price=str(precio_orden_takeprofit), 
+                                price=str(precio_orden_takeprofit),
                             )
 
-                            # Verificar si la nueva orden de take profit se realizó con éxito y obtener el nuevo order ID
-                            if 'result' in take_profit_order_response and 'orderId' in take_profit_order_response['result']:
-                                take_profit_order_id = take_profit_order_response['result']['orderId']
-                                print(f"Posicion cargada en {simbolo}, colocando take profit Orden: {take_profit_order_id}")
+                            # Extraer información relevante de la respuesta de la API
+                            if 'result' in take_profit_order_response:
+                                order_id = take_profit_order_response['result'].get('orderId', 'No ID')
+                                mensaje_tp = f"Orden de take profit abierta en {simbolo}. ID de la orden: {order_id}"
                             else:
-                                print(f"Error al realizar la nueva orden de take profit en {simbolo}: {take_profit_order_response}")
+                                mensaje_tp = f"Error al abrir la orden de take profit en {simbolo}. Detalles: {take_profit_order_response}"
+
+                            # Enviar el mensaje a través de Telegram
+                            print(mensaje_tp)
+
 
                         else:
-                            print(f"La posicion en {simbolo} aun no se ha cargado para poner take profit")
+                            print("La posicion aun no se ha cargado para poner take profit")
 
                         # Esperar antes de la próxima iteración (ajusta según tus necesidades)
-                        time.sleep(305)
+                        time.sleep(300)
 
                     except Exception as e:
-                        print(f"Se produjo un error durante la verificación: {e}")
+                        error_tp1=(f"Se produjo un error durante la verificación: {e}")
+                        print(error_tp1)
+                        
                         # Manejar el error según sea necesario
 
                     # Esperar antes de la próxima iteración del bucle interno
-                    time.sleep(5)
+                    time.sleep(120)
 
             except Exception as e:
-                print(f"Se produjo un error al obtener información inicial: {e}")
-                
-
+                error_tp2=(f"Se produjo un error en el segundo bucle: {e}")
+                print(error_tp2)
             # Esperar antes de la próxima iteración del bucle externo
-            time.sleep(15)
+            time.sleep(10)
 
     def tercer_bucle():
         while True:
@@ -267,7 +284,7 @@ def main():
                 else:
                     print(f"{simbolo}:No es necesario cancelar las recompras aún, esperando...")
 
-                time.sleep(320)
+                time.sleep(300)
 
             except Exception as e:
                 print(f"Error en el tercer bucle {simbolo}: {e}")
@@ -280,12 +297,13 @@ def main():
 
     # Iniciar los hilos
     hilo_primer_bucle.start()
-    time.sleep(10) # Esperar 10 segundos antes de iniciar los próximos bucles
+    time.sleep(10)  # Esperar 10 segundos antes de iniciar los próximos bucles
     hilo_segundo_bucle.start()
     hilo_tercer_bucle.start()
 
     # Esperar a que los hilos terminen 
     hilo_primer_bucle.join()
+    time.sleep(10)
     hilo_segundo_bucle.join()
     hilo_tercer_bucle.join()
 
